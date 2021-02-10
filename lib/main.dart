@@ -42,6 +42,10 @@ class _MyHomePageState extends State<MyHomePage> {
     _gameOfLiveService.startWorldIteration();
   }
 
+  void _resetWorld() {
+    _gameOfLiveService.initWorld();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,17 +81,27 @@ class _MyHomePageState extends State<MyHomePage> {
             Align(
               alignment: Alignment.bottomLeft,
               child: FloatingActionButton(
-                onPressed: _runWorldSimulation,
+                onPressed: _resetWorld,
                 child: Icon(Icons.auto_fix_high),
               ),
             ),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: FloatingActionButton(
-                onPressed: _runWorldSimulation,
-                child: Icon(Icons.play_arrow),
-              ),
-            ),
+            StreamBuilder<bool>(
+                stream: _gameOfLiveService.playToggle$,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    print(snapshot.data);
+                    return Align(
+                      alignment: Alignment.bottomRight,
+                      child: FloatingActionButton(
+                        onPressed: _runWorldSimulation,
+                        child: Icon(snapshot.data == true
+                            ? Icons.play_arrow
+                            : Icons.stop_circle_outlined),
+                      ),
+                    );
+                  }
+                  return Container();
+                }),
           ],
         ),
       ),

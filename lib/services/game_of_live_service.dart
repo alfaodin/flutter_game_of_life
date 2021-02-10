@@ -4,30 +4,29 @@ import 'package:game_of_life/services/cellModel.dart';
 
 class GameOfLiveService {
   final int _worldSize;
+  bool _isPlayToggle;
 
   final List<List<CellModel>> _worldTiles;
 
   final StreamController<List<List<CellModel>>> _controller$ =
       StreamController<List<List<CellModel>>>();
 
+  final StreamController<bool> _playToggle$ = StreamController<bool>();
+
   StreamSubscription<dynamic> _streamSubscription;
 
   GameOfLiveService(int worldSize)
       : _worldSize = worldSize,
-        _worldTiles = new List(worldSize);
+        _worldTiles = new List(worldSize) {
+    _isPlayToggle = true;
+    _playToggle$.add(_isPlayToggle);
+  }
 
+  Stream<bool> get playToggle$ => _playToggle$.stream;
   Stream<List<List<CellModel>>> get worldTiles$ => _controller$.stream;
 
   void initWorld() {
-    for (var i = 0; i < _worldSize; i++) {
-      _worldTiles[i] = List();
-      List<CellModel> cells = List.generate(
-        _worldSize,
-        (row) => CellModel.setRandomStatus(),
-      );
-      _worldTiles[i].addAll(cells);
-    }
-    _controller$.add(_worldTiles);
+    _setRandomWorld();
   }
 
   void closeSimulation() {
@@ -38,7 +37,15 @@ class GameOfLiveService {
   CellModel getCellModel(int col, int row) => _worldTiles[col][row];
 
   void startWorldIteration() {
-    _runWorldIterationPeriod();
+    if (_isPlayToggle) {
+      _runWorldIterationPeriod();
+    } else {
+      _streamSubscription.cancel();
+      _streamSubscription = null;
+    }
+
+    _isPlayToggle = !_isPlayToggle;
+    _playToggle$.add(_isPlayToggle);
   }
 
   void _runWorldIterationPeriod() {
@@ -49,6 +56,18 @@ class GameOfLiveService {
   void _runWorldIteration() {
     var worldTiles = _checkIfCellLives();
     _controller$.add(worldTiles);
+  }
+
+  void _setRandomWorld() {
+    for (var i = 0; i < _worldSize; i++) {
+      _worldTiles[i] = List();
+      List<CellModel> cells = List.generate(
+        _worldSize,
+        (row) => CellModel.setRandomStatus(),
+      );
+      _worldTiles[i].addAll(cells);
+    }
+    _controller$.add(_worldTiles);
   }
 
   List<List<CellModel>> _checkIfCellLives() {
